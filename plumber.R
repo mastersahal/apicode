@@ -1,99 +1,68 @@
 library(plumber)
-library(caret)
 library(jsonlite)
-library(ipred)
-library(e1071)
-library(yaml)
 
-# Utilise post method to send JSON unseen data, in the same 
-# format as our dataset
-
+# mpg  disp  hp drat    wt  qsec EngConf cylinders gears carbs
+#19.2 400.0 175 3.08 3.845 17.05       V         8     3     2
 #--------------------------------------------------
 # Read in model 
 #--------------------------------------------------
-model <- readr::read_rds("glmmodel.rds")
-model$modelInfo
+model <- readr::read_rds("mtcarslm.rds")
 
-#* Test connection
-#* @get /connection-status
+#* @apiTitle Model to predict mpg 
 
-function(){
-  list(status = "Connection to Stranded Patient API successful", 
-       time = Sys.time(),
-       username = Sys.getenv("USERNAME"))
-}
+#* @param disp     
+#* @param hp       
+#* @param drat     
+#* @param wt       
+#* @param qsec     
+#* @param EngConf  
+#* @param cylinders
+#* @param gears    
+#* @param carbs    
+#* @post /predict
 
-## Lets make the predictions
-
-#* @param supplemental_oxygen
-#* @param ICPEVDRAIN
-#* @param ICPPARENCH                   
-#* @param spinal_cord_injury           
-#* @param fracture_pelvis              
-#* @param fracture_spinal_vertebra     
-#* @param neurosurg_tbi                
-#* @param major_orthopedic_surgery     
-#* @param major_thoracic_surgery       
-#* @param major_vascular_surgery       
-#* @param intubation                   
-#* @param transfusion                  
-#* @param AGEYEARS                     
-#* @param totalgcs                     
-#* @get /predict
-predictions <- function(supplemental_oxygen          ,
-                        ICPEVDRAIN                   ,
-                        ICPPARENCH                   ,
-                        spinal_cord_injury           ,
-                        fracture_pelvis              ,
-                        fracture_spinal_vertebra     ,
-                        neurosurg_tbi                ,
-                        major_orthopedic_surgery     ,
-                        major_thoracic_surgery       ,
-                        major_vascular_surgery       ,
-                        intubation                   ,
-                        transfusion                  ,
-                        AGEYEARS                     ,
-                        totalgcs                     )
+predictions <- function(
+  disp     ,
+  hp       ,
+  drat     ,
+  wt       ,
+  qsec     ,
+  EngConf  ,
+  cylinders,
+  gears,    
+  carbs )
+  
 {
-  supplemental_oxygen           <- as.character(supplemental_oxygen          )
-  ICPEVDRAIN                    <- as.character(ICPEVDRAIN                   )
-  ICPPARENCH                    <- as.character(ICPPARENCH                   )
-  spinal_cord_injury            <- as.character(spinal_cord_injury           )
-  fracture_pelvis               <- as.character(fracture_pelvis              )
-  fracture_spinal_vertebra      <- as.character(fracture_spinal_vertebra     )
-  neurosurg_tbi                 <- as.character(neurosurg_tbi                )
-  major_orthopedic_surgery      <- as.character(major_orthopedic_surgery     )
-  major_thoracic_surgery        <- as.character(major_thoracic_surgery       )
-  major_vascular_surgery        <- as.character(major_vascular_surgery       )
-  intubation                    <- as.character(intubation                   )
-  transfusion                   <- as.character(transfusion                  )
-  AGEYEARS                      <- as.integer(AGEYEARS                       )
-  totalgcs                      <- as.integer(totalgcs                       )
   
-  X.new <- data.frame(  supplemental_oxygen           =  as.factor(supplemental_oxygen      ),
-                        ICPEVDRAIN                    =  as.factor(ICPEVDRAIN               ),
-                        ICPPARENCH                    =  as.factor(ICPPARENCH               ),
-                        spinal_cord_injury            =  as.factor(spinal_cord_injury       ),
-                        fracture_pelvis               =  as.factor(fracture_pelvis          ),
-                        fracture_spinal_vertebra      =  as.factor(fracture_spinal_vertebra ),
-                        neurosurg_tbi                 =  as.factor(neurosurg_tbi            ),
-                        major_orthopedic_surgery      =  as.factor(major_orthopedic_surgery ),
-                        major_thoracic_surgery        =  as.factor(major_thoracic_surgery   ),
-                        major_vascular_surgery        =  as.factor(major_vascular_surgery   ),
-                        intubation                    =  as.factor(intubation               ),
-                        transfusion                   =  as.factor(transfusion              ),
-                        AGEYEARS                      =  as.integer(AGEYEARS                ),
-                        totalgcs                      =  as.integer(totalgcs                ))
-  #predict based on input
-  
-  
-  ##predict(iris_rf, new_data= X.new, type ="class")
-  y.pred <- model$NewPredictions(model = modellist$modelobject, newdata = X.new)
-  
-  response <- ifelse(y.pred$Yes >= 0.001587182, "High-risk", "Low-risk")
-  
-  return(response)
-  
+  disp      <-   as.numeric(disp)
+  hp        <-   as.numeric(hp)
+  drat      <-   as.numeric(drat)
+  wt        <-   as.numeric(wt)
+  qsec      <-   as.numeric(qsec)
+  EngConf   <-   as.character(EngConf)
+  cylinders <-   as.character(cylinders)
+  gears     <-   as.character(gears)
+  carbs     <-   as.character(carbs)
+
+#Pre-processing the data
+X.new <- data.frame(  
+                              
+  disp      =   disp,
+  hp        =   hp,
+  drat      =   drat,
+  wt        =   wt,
+  qsec      =   qsec,
+  EngConf   =   as.factor(EngConf),
+  cylinders =   as.factor(cylinders),
+  gears     =   as.factor(gears),
+  carbs     =   as.factor(carbs))
+                            
+                            
+ #predict based on input
+ 
+ y.pred <- predict(model, newdata = X.new)
+ return(y.pred)
+                            
 }
 
 
